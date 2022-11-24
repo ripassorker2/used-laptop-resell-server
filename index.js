@@ -28,6 +28,7 @@ async function run() {
       .db("resale-laptop")
       .collection("products");
     const usersCollection = client.db("resale-laptop").collection("users");
+    const buyingCollection = client.db("resale-laptop").collection("buyng");
 
     //--.............create jwt.......................--
 
@@ -67,6 +68,14 @@ async function run() {
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // ............buying data post ..........................
+
+    app.post("/buying", async (req, res) => {
+      const buyingData = req.body;
+      const result = await buyingCollection.insertOne(buyingData);
       res.send(result);
     });
   } finally {
