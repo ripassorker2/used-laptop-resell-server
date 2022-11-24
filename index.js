@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -20,9 +21,53 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    const userCollection = client.db("resale-laptop").collection("user");
+    const catagoriesCollection = client
+      .db("resale-laptop")
+      .collection("catagories");
+    const productsCollection = client
+      .db("resale-laptop")
+      .collection("products");
+    const usersCollection = client.db("resaleLaptop").collection("users");
 
-    console.log("Database Connected...");
+    //     get catagory name
+
+    app.get("/catagory", async (req, res) => {
+      const filter = {};
+      const result = await catagoriesCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    // get catagory products
+
+    app.get("/products/:catagory", async (req, res) => {
+      const catagory = req.params.catagory;
+      const filter = { catagory: catagory };
+      const result = await productsCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    // app.put("/user/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   const user = req.body;
+    //   console.log(user);
+    //   const filter = { email: email };
+    //   const options = { upsert: true };
+    //   const updateDoc = {
+    //     $set: user,
+    //   };
+    //   const result = await usersCollection.updateOne(
+    //     filter,
+    //     updateDoc,
+    //     options
+    //   );
+    //   console.log(result);
+
+    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
+    //     expiresIn: "7d",
+    //   });
+    //   console.log(token);
+    //   res.send({ result, token });
+    // });
   } finally {
   }
 }
