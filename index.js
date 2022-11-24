@@ -27,9 +27,25 @@ async function run() {
     const productsCollection = client
       .db("resale-laptop")
       .collection("products");
-    const usersCollection = client.db("resaleLaptop").collection("users");
+    const usersCollection = client.db("resale-laptop").collection("users");
 
-    //     get catagory name
+    //--.............create jwt.......................--
+
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const filter = { email: email };
+
+      const user = await usersCollection.findOne(filter);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+          expiresIn: "7d",
+        });
+        return res.send({ token: token });
+      }
+      res.status(401).send({ token: "" });
+    });
+
+    // ...........get catagory name ..................
 
     app.get("/catagory", async (req, res) => {
       const filter = {};
@@ -37,7 +53,7 @@ async function run() {
       res.send(result);
     });
 
-    // get catagory products
+    // ..............get catagory products...................
 
     app.get("/products/:catagory", async (req, res) => {
       const catagory = req.params.catagory;
@@ -46,28 +62,13 @@ async function run() {
       res.send(result);
     });
 
-    // app.put("/user/:email", async (req, res) => {
-    //   const email = req.params.email;
-    //   const user = req.body;
-    //   console.log(user);
-    //   const filter = { email: email };
-    //   const options = { upsert: true };
-    //   const updateDoc = {
-    //     $set: user,
-    //   };
-    //   const result = await usersCollection.updateOne(
-    //     filter,
-    //     updateDoc,
-    //     options
-    //   );
-    //   console.log(result);
+    // ............create user and save in db.................
 
-    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN, {
-    //     expiresIn: "7d",
-    //   });
-    //   console.log(token);
-    //   res.send({ result, token });
-    // });
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
   } finally {
   }
 }
