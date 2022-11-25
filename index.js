@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
@@ -55,11 +55,6 @@ async function run() {
       res.send(result);
     });
 
-    // app.get("/users", async (req, res) => {
-    //   const result = await usersCollection.find({}).toArray();
-    //   res.send(result);
-    // });
-
     // ...........get catagory name ..................
 
     app.get("/catagory", async (req, res) => {
@@ -83,6 +78,21 @@ async function run() {
       res.send(result);
     });
 
+    // .................. get all buyer ................
+
+    app.get("/allBuyers", async (req, res) => {
+      const filter = { role: "Buyer" };
+      const result = await usersCollection.find(filter).toArray();
+      res.send(result);
+    });
+    // .................. get all buyer ................
+
+    app.delete("/buyer/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(filter);
+      res.send(result);
+    });
     // ............create user and save in db.................
 
     app.post("/users", async (req, res) => {
@@ -91,10 +101,12 @@ async function run() {
       res.send(result);
     });
 
-    // ............buying data get ..........................
+    // ............buying data get for particular buyer ..........................
 
-    app.get("/buying", async (req, res) => {
-      const result = await buyingCollection.find({}).toArray();
+    app.get("/buying/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { buyeremail: email };
+      const result = await buyingCollection.find(filter).toArray();
       res.send(result);
     });
     // ............buying data post ..........................
