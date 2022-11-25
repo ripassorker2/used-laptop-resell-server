@@ -85,9 +85,16 @@ async function run() {
       const result = await usersCollection.find(filter).toArray();
       res.send(result);
     });
-    // .................. get all buyer ................
+    // .................. get all seller ................
 
-    app.delete("/buyer/:id", async (req, res) => {
+    app.get("/allSellers", async (req, res) => {
+      const filter = { role: "Seller" };
+      const result = await usersCollection.find(filter).toArray();
+      res.send(result);
+    });
+    // .................. delete all buyer ................
+
+    app.delete("/buyerOrSeller/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const result = await usersCollection.deleteOne(filter);
