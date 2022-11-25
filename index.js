@@ -46,6 +46,20 @@ async function run() {
       res.status(401).send({ token: "" });
     });
 
+    // ...................cheekk user role .................
+
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
+
+    // app.get("/users", async (req, res) => {
+    //   const result = await usersCollection.find({}).toArray();
+    //   res.send(result);
+    // });
+
     // ...........get catagory name ..................
 
     app.get("/catagory", async (req, res) => {
@@ -63,6 +77,12 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/products", async (req, res) => {
+      const product = req.body;
+      const result = await productsCollection.insertOne(product);
+      res.send(result);
+    });
+
     // ............create user and save in db.................
 
     app.post("/users", async (req, res) => {
@@ -71,6 +91,12 @@ async function run() {
       res.send(result);
     });
 
+    // ............buying data get ..........................
+
+    app.get("/buying", async (req, res) => {
+      const result = await buyingCollection.find({}).toArray();
+      res.send(result);
+    });
     // ............buying data post ..........................
 
     app.post("/buying", async (req, res) => {
