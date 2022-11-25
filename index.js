@@ -72,9 +72,30 @@ async function run() {
       res.send(result);
     });
 
+    //.............get product by emial .............
+
+    app.get("/product/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const filter = { sellerEmail: email };
+      const result = await productsCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    // .................. post product ................
+
     app.post("/products", async (req, res) => {
       const product = req.body;
       const result = await productsCollection.insertOne(product);
+      res.send(result);
+    });
+
+    // .................. delete product ................
+
+    app.delete("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(filter);
       res.send(result);
     });
 
