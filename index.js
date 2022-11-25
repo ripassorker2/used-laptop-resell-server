@@ -99,6 +99,33 @@ async function run() {
       res.send(result);
     });
 
+    //.............post reported product ...................
+
+    app.put("/report/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          report: "Reported",
+        },
+      };
+      const result = await productsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    //.............get reported product ...................
+
+    app.get("/reportProduct", async (req, res) => {
+      const filter = { report: "Reported" };
+      const result = await productsCollection.find(filter).toArray();
+      res.send(result);
+    });
+
     // .................. get all buyer ................
 
     app.get("/allBuyers", async (req, res) => {
