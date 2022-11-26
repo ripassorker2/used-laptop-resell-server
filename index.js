@@ -4,6 +4,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
+const stripe = require("stripe")(process.env.STRIPE_KEY);
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -29,6 +31,7 @@ async function run() {
       .collection("products");
     const usersCollection = client.db("resale-laptop").collection("users");
     const buyingCollection = client.db("resale-laptop").collection("buyng");
+    const paymentCollection = client.db("resale-laptop").collection("payment");
 
     //--.............create jwt.......................--
 
@@ -76,7 +79,6 @@ async function run() {
 
     app.get("/product/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email);
       const filter = { sellerEmail: email };
       const result = await productsCollection.find(filter).toArray();
       res.send(result);
@@ -140,7 +142,7 @@ async function run() {
       const result = await usersCollection.find(filter).toArray();
       res.send(result);
     });
-    // .................. delete all buyer ................
+    // .................. delete all buyer or seller ................
 
     app.delete("/buyerOrSeller/:id", async (req, res) => {
       const id = req.params.id;
@@ -164,11 +166,58 @@ async function run() {
       const result = await buyingCollection.find(filter).toArray();
       res.send(result);
     });
+    // ............buying data get for particular buyer ..........................
+
+    app.get("/buyingPayment/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await buyingCollection.findOne(filter);
+      res.send(result);
+    });
+
     // ............buying data post ..........................
 
     app.post("/buying", async (req, res) => {
       const buyingData = req.body;
       const result = await buyingCollection.insertOne(buyingData);
+      res.send(result);
+    });
+
+    //...................  create  payment metthod.......................
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const price = req.body.price;
+      const amount = price * 100;
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    //............ payments ...............
+
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const result = await paymentCollection.insertOne(payment);
+      const id = payment.buyingId;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: "paid",
+          transactionId: payment.transactionId,
+        },
+      };
+      const updatedResult = await buyingCollection.updateOne(
+        filter,
+        updatedDoc
+      );
       res.send(result);
     });
   } finally {
