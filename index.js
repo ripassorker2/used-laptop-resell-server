@@ -70,8 +70,10 @@ async function run() {
 
     app.get("/products/:catagory", async (req, res) => {
       const catagory = req.params.catagory;
-      const filter = { catagory: catagory };
-      const result = await productsCollection.find(filter).toArray();
+      const query = {
+        $and: [{ catagory: catagory }, { status: "available" }],
+      };
+      const result = await productsCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -127,6 +129,32 @@ async function run() {
       const result = await productsCollection.find(filter).toArray();
       res.send(result);
     });
+    // .............get advertise  product ...................
+
+    app.get("/advertise", async (req, res) => {
+      const filter = { advertise: true };
+      const result = await productsCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    // ...............set advertise..........
+
+    app.put("/advertiseProducts/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          advertise: true,
+        },
+      };
+      const result = await productsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
 
     // .................. get all buyer ................
 
@@ -140,6 +168,26 @@ async function run() {
     app.get("/allSellers", async (req, res) => {
       const filter = { role: "Seller" };
       const result = await usersCollection.find(filter).toArray();
+      res.send(result);
+    });
+
+    // ..............user verify ,,,,,,,,,,,,,,,,,,
+
+    app.put("/verify/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          verify: "Verified",
+        },
+      };
+
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
       res.send(result);
     });
     // .................. delete all buyer or seller ................
@@ -206,6 +254,9 @@ async function run() {
     app.post("/payments", async (req, res) => {
       const payment = req.body;
       const result = await paymentCollection.insertOne(payment);
+
+      // ...............change buying status .................
+
       const id = payment.buyingId;
       const filter = { _id: ObjectId(id) };
       const updatedDoc = {
@@ -217,6 +268,20 @@ async function run() {
       const updatedResult = await buyingCollection.updateOne(
         filter,
         updatedDoc
+      );
+
+      // ...............change product status .................
+      const productId = req.body.productId;
+      const query = { _id: ObjectId(productId) };
+      const updatedProduct = {
+        $set: {
+          status: "sold",
+          advertise: false,
+        },
+      };
+      const updatedProductResult = await productsCollection.updateOne(
+        query,
+        updatedProduct
       );
       res.send(result);
     });
