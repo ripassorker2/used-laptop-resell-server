@@ -33,12 +33,83 @@ async function run() {
     const buyingCollection = client.db("resale-laptop").collection("buyng");
     const paymentCollection = client.db("resale-laptop").collection("payment");
 
+    //.............verify JWT........................
+
+    function verifyJWT(req, res, next) {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).send({ message: "Unauthorization access !!" });
+      }
+      const token = authHeader.split(" ")[1];
+      // console.log(token);
+      jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+          return res.status(402).send({
+            success: false,
+            message: "Forbidden access",
+          });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    }
+
+    //.............verify Admin........................
+
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+
+      const query = {
+        email: decodedEmail,
+      };
+
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "Admin") {
+        return res.status(403).send({
+          message: "You are not  admin ,so  cannot visit this route !!",
+        });
+      }
+      next();
+    };
+
+    //.............verify Seller........................
+
+    const verifySeller = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = {
+        email: decodedEmail,
+      };
+
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "Seller") {
+        return res.status(403).send({
+          message: "You are not  seller , so  cannot visit this route !!",
+        });
+      }
+      next();
+    };
+    // //.............verify Buyer........................
+
+    const verifyBuyer = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = {
+        email: decodedEmail,
+      };
+
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "Buyer") {
+        return res.status(403).send({
+          message: "You are not  Buyer , so  cannot visit this route !!",
+        });
+      }
+      next();
+    };
+
     //--.............create jwt.......................--
 
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
       const filter = { email: email };
-
       const user = await usersCollection.findOne(filter);
       if (user) {
         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
@@ -79,7 +150,7 @@ async function run() {
 
     //.............get product by emial .............
 
-    app.get("/product/:email", async (req, res) => {
+    app.get("/product/:email", verifyJWT, verifySeller, async (req, res) => {
       const email = req.params.email;
       const filter = { sellerEmail: email };
       const result = await productsCollection.find(filter).toArray();
@@ -96,7 +167,7 @@ async function run() {
 
     // .................. delete product ................
 
-    app.delete("/products/:id", async (req, res) => {
+    app.delete("/products/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const result = await productsCollection.deleteOne(filter);
@@ -124,7 +195,7 @@ async function run() {
 
     //.............get reported product ...................
 
-    app.get("/reportProduct", async (req, res) => {
+    app.get("/reportProduct", verifyJWT, verifyAdmin, async (req, res) => {
       const filter = { report: "Reported" };
       const result = await productsCollection.find(filter).toArray();
       res.send(result);
@@ -139,33 +210,38 @@ async function run() {
 
     // ...............set advertise..........
 
-    app.put("/advertiseProducts/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: ObjectId(id) };
-      const options = { upsert: true };
-      const updateDoc = {
-        $set: {
-          advertise: true,
-        },
-      };
-      const result = await productsCollection.updateOne(
-        filter,
-        updateDoc,
-        options
-      );
-      res.send(result);
-    });
+    app.put(
+      "/advertiseProducts/:id",
+      verifyJWT,
+      verifySeller,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            advertise: true,
+          },
+        };
+        const result = await productsCollection.updateOne(
+          filter,
+          updateDoc,
+          options
+        );
+        res.send(result);
+      }
+    );
 
     // .................. get all buyer ................
 
-    app.get("/allBuyers", async (req, res) => {
+    app.get("/allBuyers", verifyJWT, verifyAdmin, async (req, res) => {
       const filter = { role: "Buyer" };
       const result = await usersCollection.find(filter).toArray();
       res.send(result);
     });
     // .................. get all seller ................
 
-    app.get("/allSellers", async (req, res) => {
+    app.get("/allSellers", verifyJWT, verifyAdmin, async (req, res) => {
       const filter = { role: "Seller" };
       const result = await usersCollection.find(filter).toArray();
       res.send(result);
@@ -173,7 +249,7 @@ async function run() {
 
     // ..............user verify ,,,,,,,,,,,,,,,,,,
 
-    app.put("/verify/:id", async (req, res) => {
+    app.put("/verify/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const options = { upsert: true };
@@ -192,12 +268,17 @@ async function run() {
     });
     // .................. delete all buyer or seller ................
 
-    app.delete("/buyerOrSeller/:id", async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: ObjectId(id) };
-      const result = await usersCollection.deleteOne(filter);
-      res.send(result);
-    });
+    app.delete(
+      "/buyerOrSeller/:id",
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) };
+        const result = await usersCollection.deleteOne(filter);
+        res.send(result);
+      }
+    );
     // ............create user and save in db.................
 
     app.post("/users", async (req, res) => {
@@ -208,7 +289,7 @@ async function run() {
 
     // ............buying data get for particular buyer ..........................
 
-    app.get("/buying/:email", async (req, res) => {
+    app.get("/buying/:email", verifyJWT, verifyBuyer, async (req, res) => {
       const email = req.params.email;
       const filter = { buyeremail: email };
       const result = await buyingCollection.find(filter).toArray();
@@ -251,7 +332,7 @@ async function run() {
 
     //............ payments ...............
 
-    app.post("/payments", async (req, res) => {
+    app.post("/payments", verifyJWT, verifyBuyer, async (req, res) => {
       const payment = req.body;
       const result = await paymentCollection.insertOne(payment);
 
