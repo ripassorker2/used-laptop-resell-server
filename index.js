@@ -129,7 +129,6 @@ async function run() {
       res.send(result);
     });
 
-    //   as
     // ...........get catagory name ..................
 
     app.get("/catagory", async (req, res) => {
