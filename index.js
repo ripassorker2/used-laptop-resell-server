@@ -249,9 +249,10 @@ async function run() {
 
     // ..............user verify ,,,,,,,,,,,,,,,,,,
 
-    app.put("/verify/:id", verifyJWT, verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: ObjectId(id) };
+    app.put("/verify/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      console.log(filter);
       const options = { upsert: true };
       const updateDoc = {
         $set: {
@@ -264,6 +265,16 @@ async function run() {
         updateDoc,
         options
       );
+
+      // const updateProduct = {
+      //   $set: {
+      //     seller: "Verified",
+      //   },
+      // };
+      // const updatedResult = await productsCollection.updateOne(
+      //   filter,
+      //   updateProduct
+      // );
       res.send(result);
     });
     // .................. delete all buyer or seller ................
