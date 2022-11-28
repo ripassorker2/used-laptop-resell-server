@@ -30,7 +30,7 @@ async function run() {
       .db("resale-laptop")
       .collection("products");
     const usersCollection = client.db("resale-laptop").collection("users");
-    const buyingCollection = client.db("resale-laptop").collection("buyng");
+    const buyingCollection = client.db("resale-laptop").collection("buying");
     const paymentCollection = client.db("resale-laptop").collection("payment");
 
     //.............verify JWT........................
@@ -129,6 +129,7 @@ async function run() {
       res.send(result);
     });
 
+    //   as
     // ...........get catagory name ..................
 
     app.get("/catagory", async (req, res) => {
